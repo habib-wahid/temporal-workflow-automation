@@ -2,24 +2,24 @@ package com.saga;
 
 import com.saga.common.model.PaymentEvent;
 import com.saga.common.constants.PaymentEventType;
+import com.saga.config.RabbitConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 @Component
 public class PaymentService {
     
     @Autowired 
-    private KafkaTemplate<String, PaymentEvent> paymentKafkaTemplate;
-    
+    private RabbitTemplate rabbitTemplate;
+
     @Value("${payment.simulation.success}")
     private boolean simulateSuccess;
 
-    @KafkaListener(topics = "payment-events", groupId = "payment-group")
-    public void consumeEvent(@Payload PaymentEvent event) {
+    @RabbitListener(queues = "payment-events")
+    public void consumeEvent(PaymentEvent event) {
         if (PaymentEventType.PROCESS_PAYMENT.matches(event.getEventType())) {
             System.out.println("Processing payment for order: " + event.getOrderId());
             System.out.println("Payment amount: " + event.getAmount() + " " + event.getCurrency());
@@ -34,14 +34,14 @@ public class PaymentService {
                     event.getCurrency(),
                     event.getPaymentMethod()
                 );
-                paymentKafkaTemplate.send("payment-events", successEvent);
+                rabbitTemplate.convertAndSend(RabbitConfig.SAGA_EXCHANGE, RabbitConfig.SAGA_RESPONSE_ROUTING_KEY, successEvent);
             } else {
                 System.out.println("Payment failed for order: " + event.getOrderId());
                 PaymentEvent failureEvent = new PaymentEvent(
                     event.getOrderId(), 
                     PaymentEventType.PAYMENT_FAILED
                 );
-                paymentKafkaTemplate.send("payment-events", failureEvent);
+                rabbitTemplate.convertAndSend(RabbitConfig.SAGA_EXCHANGE, RabbitConfig.SAGA_RESPONSE_ROUTING_KEY, failureEvent);
             }
         } else if (PaymentEventType.COMPENSATE_PAYMENT.matches(event.getEventType())) {
             System.out.println("Compensating payment for order: " + event.getOrderId());
@@ -50,7 +50,7 @@ public class PaymentService {
                 event.getOrderId(), 
                 PaymentEventType.PAYMENT_COMPENSATED
             );
-            paymentKafkaTemplate.send("payment-events", compensatedEvent);
+            rabbitTemplate.convertAndSend(RabbitConfig.SAGA_EXCHANGE, RabbitConfig.SAGA_RESPONSE_ROUTING_KEY, compensatedEvent);
         }
     }
 }

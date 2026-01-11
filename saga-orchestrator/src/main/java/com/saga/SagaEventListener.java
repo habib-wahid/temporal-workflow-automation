@@ -11,9 +11,9 @@ import com.saga.config.WorkflowOptionsConfig;
 import io.temporal.api.common.v1.WorkflowExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
@@ -39,7 +39,9 @@ import java.time.Duration;
  */
 @Component
 public class SagaEventListener {
-    
+
+    //todo : {temporal worker concepts}
+
     private static final Logger logger = LoggerFactory.getLogger(SagaEventListener.class);
     private static final String TASK_QUEUE = "ORDER_TASK_QUEUE";
 
@@ -49,7 +51,8 @@ public class SagaEventListener {
     /**
      * Listens to order-events topic for ORDER_CREATED events to start workflows
      */
-    @KafkaListener(topics = "order-events", groupId = "saga-group")
+   // @KafkaListener(topics = "order-events", groupId = "saga-group")
+    @RabbitListener(queues = "order-events")
     public void consumeOrderEvent(@Payload OrderEvent event) {
         
         String workflowId = event.getOrderId();
@@ -72,7 +75,8 @@ public class SagaEventListener {
     /**
      * Listens to payment-events topic for payment-related events
      */
-    @KafkaListener(topics = "payment-events", groupId = "saga-group")
+    //@KafkaListener(topics = "payment-events", groupId = "saga-group")
+    @RabbitListener(queues = "saga-payment-response-events")
     public void consumePaymentEvent(@Payload PaymentEvent event) {
         
         String workflowId = event.getOrderId();
@@ -96,7 +100,7 @@ public class SagaEventListener {
     /**
      * Listens to inventory-events topic for inventory-related events
      */
-    @KafkaListener(topics = "inventory-events", groupId = "saga-group")
+    @RabbitListener(queues = "saga-inventory-response-events")
     public void consumeInventoryEvent(@Payload InventoryEvent event) {
         
         String workflowId = event.getOrderId();
@@ -120,7 +124,7 @@ public class SagaEventListener {
     /**
      * Listens to shipping-events topic for shipping-related events
      */
-    @KafkaListener(topics = "shipping-events", groupId = "saga-group")
+    @RabbitListener(queues = "saga-shipping-response-events")
     public void consumeShippingEvent(@Payload ShippingEvent event) {
         
         String workflowId = event.getOrderId();

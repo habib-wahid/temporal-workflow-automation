@@ -1,0 +1,3 @@
+
+POST http://localhost:8081/orders/5?customerId=12345
+Content-Type: application/json

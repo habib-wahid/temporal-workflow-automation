@@ -2,24 +2,24 @@ package com.saga;
 
 import com.saga.common.model.ShippingEvent;
 import com.saga.common.constants.ShippingEventType;
+import com.saga.config.RabbitConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 @Component
 public class ShippingService {
     
     @Autowired
-    private KafkaTemplate<String, ShippingEvent> shippingKafkaTemplate;
-    
+    private RabbitTemplate rabbitTemplate;
+
     @Value("${shipping.simulation.success}")
     private boolean simulateSuccess;
 
-    @KafkaListener(topics = "shipping-events", groupId = "shipping-group")
-    public void consumeEvent(@Payload ShippingEvent event) {
+    @RabbitListener(queues = "shipping-events")
+    public void consumeEvent(ShippingEvent event) {
         if (ShippingEventType.PROCESS_SHIPPING.matches(event.getEventType())) {
             System.out.println("Processing shipping for order: " + event.getOrderId());
             System.out.println("Shipping address: " + event.getShippingAddress());
@@ -33,14 +33,14 @@ public class ShippingService {
                     "TRACK-" + event.getOrderId(), // Generate tracking number
                     "Standard Carrier"
                 );
-                shippingKafkaTemplate.send("shipping-events", completedEvent);
+                rabbitTemplate.convertAndSend(RabbitConfig.SAGA_EXCHANGE, RabbitConfig.SAGA_RESPONSE_ROUTING_KEY, completedEvent);
             } else {
                 System.out.println("Shipping failed for order: " + event.getOrderId());
                 ShippingEvent failedEvent = new ShippingEvent(
                     event.getOrderId(), 
                     ShippingEventType.SHIPPING_FAILED
                 );
-                shippingKafkaTemplate.send("shipping-events", failedEvent);
+                rabbitTemplate.convertAndSend(RabbitConfig.SAGA_EXCHANGE, RabbitConfig.SAGA_RESPONSE_ROUTING_KEY, failedEvent);
             }
         } else if (ShippingEventType.COMPENSATE_SHIPPING.matches(event.getEventType())) {
             System.out.println("Compensating shipping for order: " + event.getOrderId());
@@ -48,7 +48,7 @@ public class ShippingService {
                 event.getOrderId(), 
                 ShippingEventType.SHIPPING_COMPENSATED
             );
-            shippingKafkaTemplate.send("shipping-events", compensatedEvent);
+            rabbitTemplate.convertAndSend(RabbitConfig.SAGA_EXCHANGE, RabbitConfig.SAGA_RESPONSE_ROUTING_KEY, compensatedEvent);
         }
     }
 } 
