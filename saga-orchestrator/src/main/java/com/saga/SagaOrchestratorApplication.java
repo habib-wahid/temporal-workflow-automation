@@ -11,6 +11,7 @@ public class SagaOrchestratorApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SagaOrchestratorApplication.class, args);
 		System.out.println("Saga Orchestrator Application Started");
+
 	}
 
 }

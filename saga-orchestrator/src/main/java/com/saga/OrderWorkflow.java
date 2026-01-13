@@ -27,7 +27,13 @@ public interface OrderWorkflow {
     void placeOrder(String orderId);
 
     // Signal methods for external events from services
-    
+
+    @SignalMethod
+    void onOrderCreated();
+
+    @SignalMethod
+    void onOrderFailed();
+
     @SignalMethod
     void onPaymentCompleted();
 

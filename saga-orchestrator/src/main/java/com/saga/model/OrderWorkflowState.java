@@ -19,6 +19,7 @@ public class OrderWorkflowState {
     }
     
     public enum WorkflowStep {
+        ORDER,
         PAYMENT,
         INVENTORY,
         SHIPPING

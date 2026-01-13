@@ -1,5 +1,6 @@
 package com.saga;
 
+import com.saga.common.constants.OrderEventType;
 import com.saga.common.model.OrderEvent;
 import com.saga.common.model.PaymentEvent;
 import com.saga.common.model.InventoryEvent;
@@ -52,7 +53,7 @@ public class SagaEventListener {
      * Listens to order-events topic for ORDER_CREATED events to start workflows
      */
    // @KafkaListener(topics = "order-events", groupId = "saga-group")
-    @RabbitListener(queues = "order-events")
+    @RabbitListener(queues = "saga-order-response-events")
     public void consumeOrderEvent(@Payload OrderEvent event) {
         
         String workflowId = event.getOrderId();
@@ -61,14 +62,15 @@ public class SagaEventListener {
         logger.info("Processing order event: {} for order: {}", eventType, workflowId);
 
         try {
-            if ("ORDER_CREATED".equals(eventType)) {
-                handleOrderCreated(workflowId);
+            if (OrderEventType.ORDER_CONFIRMED.matches(eventType)) {
+                signalWorkflow(workflowId, OrderWorkflow::onOrderCreated, "Order completion");
+            } else if (OrderEventType.FAILED_ORDER.matches(eventType)) {
+                signalWorkflow(workflowId, OrderWorkflow::onOrderFailed, "Order failure");
             } else {
-                logger.warn("Unknown order event type: {} for order: {}", eventType, workflowId);
+                logger.debug("Ignoring order event type: {} for order: {}", eventType, workflowId);
             }
         } catch (Exception e) {
-            logger.error("Error processing order event: {} for order: {}", eventType, workflowId, e);
-            // Don't rethrow - let Kafka retry if needed based on consumer config
+            logger.error("Error processing Order event: {} for order: {}", eventType, workflowId, e);
         }
     }
     

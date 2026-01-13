@@ -19,6 +19,10 @@ public interface OrderActivities {
      * Publishes PROCESS_PAYMENT event to Kafka.
      * @param orderId The order ID
      */
+
+    @ActivityMethod
+    void publishOrderCreatedEvent(String orderId);
+
     @ActivityMethod
     void publishPaymentRequest(String orderId);
     
@@ -41,6 +45,10 @@ public interface OrderActivities {
      * This triggers payment refund in the payment service.
      * @param orderId The order ID
      */
+
+    @ActivityMethod
+    void compensateOrder(String orderId);
+
     @ActivityMethod
     void compensatePayment(String orderId);
     

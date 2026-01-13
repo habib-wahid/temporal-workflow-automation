@@ -1,5 +1,7 @@
 package com.saga.activities;
 
+import com.saga.common.constants.OrderEventType;
+import com.saga.common.model.OrderEvent;
 import com.saga.common.model.PaymentEvent;
 import com.saga.common.model.InventoryEvent;
 import com.saga.common.model.ShippingEvent;
@@ -31,6 +33,24 @@ public class OrderActivitiesImpl implements OrderActivities {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Override
+    public void publishOrderCreatedEvent(String orderId) {
+        logger.info("Activity: Publishing ORDER_CREATED event for order: {}", orderId);
+
+        try {
+            OrderEvent orderEvent = new OrderEvent(
+                    orderId,
+                    OrderEventType.ORDER_CREATED
+            );
+
+            rabbitTemplate.convertAndSend(RabbitConfig.SAGA_EXCHANGE, RabbitConfig.ORDER_ROUTING_KEY, orderEvent);
+            logger.info("Activity: Successfully published ORDER_CREATED event for order: {}", orderId);
+        } catch (Exception e) {
+            logger.error("Activity: Failed to publish ORDER_CREATED event for order: {}", orderId, e);
+            throw new RuntimeException("Failed to publish order created event", e);
+        }
+    }
 
     @Override
     public void publishPaymentRequest(String orderId) {
@@ -91,7 +111,12 @@ public class OrderActivitiesImpl implements OrderActivities {
             throw new RuntimeException("Failed to publish shipping request", e);
         }
     }
-    
+
+    @Override
+    public void compensateOrder(String orderId) {
+
+    }
+
     @Override
     public void compensatePayment(String orderId) {
         logger.warn("Activity: Compensating payment for order: {}", orderId);

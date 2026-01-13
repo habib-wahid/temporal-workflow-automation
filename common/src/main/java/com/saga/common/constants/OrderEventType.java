@@ -5,7 +5,9 @@ package com.saga.common.constants;
  * This provides type-safety for order service operations.
  */
 public enum OrderEventType {
-    ORDER_CREATED;
+    ORDER_CREATED,
+    ORDER_CONFIRMED,
+    FAILED_ORDER;
 
     /**
      * Check if this event type matches the given string

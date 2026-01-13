@@ -15,13 +15,13 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitConfig {
 
     // Exchange
-    public static final String SAGA_EXCHANGE = "saga-exchange";
+    public static final String SAGA_EXCHANGE = "saga-order-exchange";
 
     // Queues
-    public static final String ORDER_QUEUE = "order-events";
+    public static final String ORDER_RESPONSE_QUEUE = "saga-order-response-events";
 
     // Routing Keys
-    public static final String ORDER_ROUTING_KEY = "order.events";
+    public static final String ORDER_ROUTING_KEY = "order.response.events";
 
     @Bean
     public TopicExchange sagaExchange() {
@@ -30,7 +30,7 @@ public class RabbitConfig {
 
     @Bean
     public Queue orderQueue() {
-        return new Queue(ORDER_QUEUE, true); // durable queue
+        return new Queue(ORDER_RESPONSE_QUEUE, true); // durable queue
     }
 
     @Bean
